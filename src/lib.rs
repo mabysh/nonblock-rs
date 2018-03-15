@@ -180,6 +180,13 @@ impl<R: AsRawFd + Read> NonBlockingReader<R> {
             }
         }
     }
+
+    /// Return the reference to blocking version of the internally managed reader.
+    ///
+    /// This will not disable O_NONBLOCK on the file descriptor, so must be used with care!
+    pub fn reader_ref(&self) -> &R {
+        &self.reader
+    }
 }
 
 
