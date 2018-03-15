@@ -11,6 +11,7 @@ keywords = ["nonblocking", "O_NONBLOCK", "reader"]
 
 [dependencies]
 libc = "0.2"
+bytes = "0.4.6"
 
 [dev-dependencies]
 chrono = { version = "0.2", features = ["serde"] }

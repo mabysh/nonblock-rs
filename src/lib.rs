@@ -22,9 +22,12 @@
 //! }
 //! ```
 extern crate libc;
+extern crate bytes;
 use std::os::unix::io::{RawFd, AsRawFd};
 use std::io::{self, Read, ErrorKind};
 use libc::{F_GETFL, F_SETFL, fcntl, O_NONBLOCK};
+
+use bytes::*;
 
 /// Simple non-blocking wrapper for reader types that implement AsRawFd
 pub struct NonBlockingReader<R: AsRawFd + Read> {
@@ -97,7 +100,7 @@ impl<R: AsRawFd + Read> NonBlockingReader<R> {
     /// noblock_stdout.read_available(&mut buf).unwrap();
     /// ```
 
-    pub fn read_available(&mut self, buf: &mut Vec<u8>) -> io::Result<usize> {
+    pub fn read_available(&mut self, buf: &mut BytesMut) -> io::Result<usize> {
         let mut buf_len = 0;
         loop {
             let mut bytes = [0u8; 1024];
@@ -117,7 +120,7 @@ impl<R: AsRawFd + Read> NonBlockingReader<R> {
                 // bytes available
                 Ok(len) => {
                     buf_len += len;
-                    buf.append(&mut bytes[0..(len)].to_owned())
+                    buf.extend_from_slice(&mut bytes[0..(len)].to_owned())
                 }
                 // IO Error encountered
                 Err(err) => {
@@ -162,9 +165,9 @@ impl<R: AsRawFd + Read> NonBlockingReader<R> {
     ///   that manages the captures a final non-UTF-8 character and prepends it to the next call,
     ///   but in practice, this has worked as expected.
     pub fn read_available_to_string(&mut self, buf: &mut String) -> io::Result<usize> {
-        let mut byte_buf: Vec<u8> = Vec::with_capacity(1024);
+        let mut byte_buf: BytesMut = BytesMut::with_capacity(1024);
         let res = self.read_available(&mut byte_buf);
-        match String::from_utf8(byte_buf) {
+        match String::from_utf8(byte_buf.to_vec()) {
             Ok(utf8_buf) => {
                 // append any read data before returning the `read_available` result
                 buf.push_str(&utf8_buf);
