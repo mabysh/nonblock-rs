@@ -1,10 +1,7 @@
 # nonblock-rs
 Read available data from file descriptors without blocking
 
-[Documentation](http://anowell.github.io/nonblock-rs/nonblock/)
-
-[![Crates.io](https://img.shields.io/crates/v/nonblock.svg?maxAge=2592000)](https://crates.io/crates/nonblock)
-[![Build Status](https://travis-ci.org/anowell/nonblock-rs.svg)](https://travis-ci.org/anowell/nonblock-rs)
+This is fork of [original crate](https://github.com/anowell/nonblock-rs)
 
 ## Examples
 
