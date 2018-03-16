@@ -30,6 +30,7 @@ use libc::{F_GETFL, F_SETFL, fcntl, O_NONBLOCK};
 use bytes::*;
 
 /// Simple non-blocking wrapper for reader types that implement AsRawFd
+#[derive(Debug)]
 pub struct NonBlockingReader<R: AsRawFd + Read> {
     eof: bool,
     reader: R,
@@ -104,25 +105,20 @@ impl<R: AsRawFd + Read> NonBlockingReader<R> {
         let mut buf_len = 0;
         loop {
             let mut bytes = [0u8; 1024];
-            match self.reader.read(&mut bytes[..]) {
+            match self.read(&mut bytes[..]) {
                 // EOF
                 Ok(0) => {
-                    self.eof = true;
                     break;
                 }
-                // Not EOF, but no more data currently available
                 Err(ref err) if err.kind() == ErrorKind::WouldBlock => {
-                    self.eof = false;
                     break;
                 }
                 // Ignore interruptions, continue reading
                 Err(ref err) if err.kind() == ErrorKind::Interrupted => {}
-                // bytes available
                 Ok(len) => {
                     buf_len += len;
                     buf.extend_from_slice(&mut bytes[0..(len)].to_owned())
                 }
-                // IO Error encountered
                 Err(err) => {
                     return Err(err);
                 }
@@ -180,15 +176,38 @@ impl<R: AsRawFd + Read> NonBlockingReader<R> {
             }
         }
     }
-
-    /// Return the reference to blocking version of the internally managed reader.
-    ///
-    /// This will not disable O_NONBLOCK on the file descriptor, so must be used with care!
-    pub fn reader_ref(&self) -> &R {
-        &self.reader
-    }
 }
 
+impl<R> Read for NonBlockingReader<R>
+    where R: AsRawFd + Read,
+{
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        match self.reader.read(buf) {
+            // EOF
+            Ok(0) => {
+                self.eof = true;
+                Ok(0)
+            }
+            // Not EOF, but no more data currently available
+            Err(ref err) if err.kind() == ErrorKind::WouldBlock => {
+                self.eof = false;
+                Err(io::Error::from(err.kind()))
+            }
+            // Ignore interruptions, continue reading
+            Err(ref err) if err.kind() == ErrorKind::Interrupted => {
+                Err(io::Error::from(err.kind()))
+            }
+            // bytes available
+            Ok(len) => {
+                Ok(len)
+            }
+            // IO Error encountered
+            Err(err) => {
+                return Err(err);
+            }
+        }
+    }
+}
 
 fn set_blocking(fd: RawFd, blocking: bool) -> io::Result<()> {
     let flags = unsafe { fcntl(fd, F_GETFL, 0) };
