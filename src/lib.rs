@@ -204,12 +204,6 @@ impl<R> Read for NonBlockingReader<R>
     }
 }
 
-impl<R: AsRawFd + Read> Drop for NonBlockingReader<R> {
-    fn drop(&mut self) {
-        set_blocking(self.reader.as_raw_fd(), true).unwrap();
-    }
-}
-
 fn set_blocking(fd: RawFd, blocking: bool) -> io::Result<()> {
     let flags = unsafe { fcntl(fd, F_GETFL, 0) };
     if flags < 0 {
