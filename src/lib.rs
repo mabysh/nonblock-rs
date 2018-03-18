@@ -206,7 +206,7 @@ impl<R> Read for NonBlockingReader<R>
 
 impl<R: AsRawFd + Read> Drop for NonBlockingReader<R> {
     fn drop(&mut self) {
-        try!(set_blocking(self.reader.as_raw_fd(), true))
+        try!(set_blocking(self.reader.as_raw_fd(), true));
     }
 }
 
