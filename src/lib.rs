@@ -188,24 +188,25 @@ impl<R> Read for NonBlockingReader<R>
                 self.eof = true;
                 Ok(0)
             }
-            // Not EOF, but no more data currently available
-            Err(ref err) if err.kind() == ErrorKind::WouldBlock => {
-                self.eof = false;
-                Err(io::Error::from(err.kind()))
-            }
-            // Ignore interruptions, continue reading
-            Err(ref err) if err.kind() == ErrorKind::Interrupted => {
-                Err(io::Error::from(err.kind()))
-            }
             // bytes available
             Ok(len) => {
                 Ok(len)
             }
             // IO Error encountered
             Err(err) => {
+                // Not EOF, but no more data currently available
+                if err.kind() == ErrorKind::WouldBlock {
+                    self.eof = false;
+                }
                 return Err(err);
             }
         }
+    }
+}
+
+impl<R: AsRawFd + Read> Drop for NonBlockingReader<R> {
+    fn drop(&mut self) {
+        try!(set_blocking(self.reader.as_raw_fd(), true))
     }
 }
 
