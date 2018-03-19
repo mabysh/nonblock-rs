@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["NonBlockingReader","Simple non-blocking wrapper for reader types that implement AsRawFd"]]});
