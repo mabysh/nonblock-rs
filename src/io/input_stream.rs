@@ -13,6 +13,10 @@ use super::super::reader::NonBlockingReader;
 
 use bytes::BytesMut;
 
+/// A stream that yeilds bytes without blocking as soon as they appear on reader.
+/// Created with [`input_stream`] function.
+///
+/// [`input_stream`]: fn.input_stream.html
 #[derive(Debug)]
 pub struct InputStream<R>
 where
@@ -23,6 +27,8 @@ where
     buf: BytesMut,
 }
 
+/// Create a stream of bytes to read from file descriptor until EOF is reached.
+/// It is assumed that file desctriptor can be set to nonblocking mode.
 pub fn input_stream<R: AsRawFd + Read>(fd: R, buf_capacity: Option<usize>) -> InputStream<R> {
     let reader =
         NonBlockingReader::from_fd(fd).expect("Failed to set O_NONBLOCK to the file descriptor");

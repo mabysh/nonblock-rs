@@ -47,7 +47,7 @@ impl<R: AsRawFd + Read> NonBlockingReader<R> {
         self.eof
     }
 
-    /// Returns an immutable reference to inner reader. Do not disable O_NONBLOCK.
+    /// Returns an immutable reference to inner reader. Do not disables O_NONBLOCK.
     pub fn inner_ref(&self) -> &R {
         &self.reader
     }
