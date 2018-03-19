@@ -1,0 +1,22 @@
+[package]
+name = "nonblock"
+version = "0.1.0"
+authors = ["Anthony Nowell <anowell@gmail.com>"]
+description = "Read available data from file descriptors without blocking (e.g. sockets, streams, child stdout, named pipes)"
+documentation = "http://anowell.github.io/nonblock-rs/nonblock/"
+repository = "https://github.com/anowell/nonblock-rs"
+license = "MIT"
+
+keywords = ["nonblocking", "O_NONBLOCK", "reader", "async", "mio", "tokio", "futures"]
+
+[dependencies]
+libc = "0.2"
+bytes = "0.4.6"
+mio = "0.6.14"
+tokio = "0.1.3"
+tokio-io = "0.1"
+futures = "0.1.18"
+
+[dev-dependencies]
+chrono = { version = "0.2", features = ["serde"] }
+serde_json = "0.7"
