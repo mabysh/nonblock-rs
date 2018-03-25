@@ -51,9 +51,9 @@ impl<R: AsRawFd + Read> Stream for InputStream<R> {
                     return Ok(None.into());
                 }
                 let len = self.buf.len();
-                if self.buf[len - 1] == b'\n' && len >= 1 {
+                if len >= 1 && self.buf[len - 1] == b'\n' {
                     self.buf.truncate(len - 1);
-                    if self.buf[len - 2] == b'\r' && len >= 2 {
+                    if len >= 2 && self.buf[len - 2] == b'\r' {
                         self.buf.truncate(len - 2);
                     }
                 }
