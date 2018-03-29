@@ -28,7 +28,7 @@ where
 }
 
 /// Create a stream of bytes to read from file descriptor until EOF is reached.
-/// It is assumed that file desctriptor can be set to nonblocking mode.
+/// It is assumed that file desctriptor can be set into nonblocking mode.
 pub fn input_stream<R: AsRawFd + Read>(fd: R, buf_capacity: Option<usize>) -> InputStream<R> {
     let reader =
         NonBlockingReader::from_fd(fd).expect("Failed to set O_NONBLOCK to the file descriptor");

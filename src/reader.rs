@@ -233,11 +233,21 @@ fn set_blocking(fd: RawFd, blocking: bool) -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    extern crate tokio;
+
     use super::NonBlockingReader;
     use std::sync::mpsc::channel;
     use std::net::{TcpListener, TcpStream};
     use std::thread;
-    use std::io::Write;
+    use std::io::{self, Write};
+    use std::process::{Command, Stdio};
+    use std::error::Error;
+
+    use tokio::prelude::*;
+    use tokio::runtime::*;
+    use tokio::executor::thread_pool;
+
+    use super::super::input_stream;
 
     #[test]
     fn it_works() {
@@ -262,4 +272,35 @@ mod tests {
         assert_eq!(nonblocking.read_available(&mut buf).unwrap(), 3);
         assert_eq!(buf, b"foo");
     }
+
+    #[test]
+    fn stream_test() {
+        let input = input_stream(io::stdin(), None)
+            .for_each(|val| {
+                println!("{:?}", val);
+                Ok(())
+            })
+            .map_err(|e| eprintln!("{}", e));
+        let mut rt = setup_runtime();
+        rt.spawn(input);
+        let process = Command::new("sh")
+            .arg("-c")
+            .arg("echo hello")
+            .output()
+            .expect("failed to execute echo");
+        let output = String::from_utf8_lossy(&process.stdout);
+        assert_eq!(output, "hello\n");
+        rt.shutdown_now();
+    }
+
+    fn setup_runtime() -> Runtime {
+        let mut thrd_pool = thread_pool::Builder::new();
+        thrd_pool.pool_size(4);
+        let rt = Builder::new()
+            .threadpool_builder(thrd_pool)
+            .build()
+            .expect("Failed to set up runtime");
+        rt
+    }
+
 }
