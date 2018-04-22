@@ -11,8 +11,6 @@ use tokio::reactor::PollEvented2;
 
 use super::super::reader::NonBlockingReader;
 
-use bytes::BytesMut;
-
 /// A stream that yeilds bytes without blocking as soon as they appear on reader.
 /// Created with [`input_stream`] function.
 ///
@@ -24,7 +22,7 @@ where
 {
     io: PollEvented2<NonBlockingReader<R>>,
     cap: Option<usize>,
-    buf: BytesMut,
+    buf: Vec<u8>,
 }
 
 /// Create a stream of bytes to read from file descriptor until EOF is reached.
@@ -35,15 +33,15 @@ pub fn input_stream<R: AsRawFd + Read>(fd: R, buf_capacity: Option<usize>) -> In
     InputStream {
         io: PollEvented2::new(reader),
         cap: buf_capacity,
-        buf: new_buf(buf_capacity),
+        buf: new_vec(buf_capacity),
     }
 }
 
 impl<R: AsRawFd + Read> Stream for InputStream<R> {
-    type Item = BytesMut;
+    type Item = Vec<u8>;
     type Error = io::Error;
 
-    fn poll(&mut self) -> futures::Poll<Option<BytesMut>, io::Error> {
+    fn poll(&mut self) -> futures::Poll<Option<Vec<u8>>, io::Error> {
         match try_nb!(self.io.read_buf(&mut self.buf)) {
             futures::Async::Ready(_i) => {
                 if self.io.get_ref().is_eof() {
@@ -52,12 +50,12 @@ impl<R: AsRawFd + Read> Stream for InputStream<R> {
                 }
                 let len = self.buf.len();
                 if len >= 1 && self.buf[len - 1] == b'\n' {
-                    self.buf.truncate(len - 1);
+                    self.buf.pop();
                     if len >= 2 && self.buf[len - 2] == b'\r' {
-                        self.buf.truncate(len - 2);
+                        self.buf.pop();
                     }
                 }
-                return Ok(Some(mem::replace(&mut self.buf, new_buf(self.cap))).into());
+                return Ok(Some(mem::replace(&mut self.buf, new_vec(self.cap))).into());
             }
             futures::Async::NotReady => {
                 return Ok(Async::NotReady);
@@ -66,9 +64,9 @@ impl<R: AsRawFd + Read> Stream for InputStream<R> {
     }
 }
 
-fn new_buf(size: Option<usize>) -> BytesMut {
+fn new_vec(size: Option<usize>) -> Vec<u8> {
     match size {
-        Some(s) => BytesMut::with_capacity(s),
-        None => BytesMut::new(),
+        Some(s) => Vec::with_capacity(s),
+        None => Vec::new(),
     }
 }
